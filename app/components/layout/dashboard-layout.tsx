@@ -411,12 +411,6 @@ export default function DashboardLayout({
                   }`}
                 >
                   {item.icon}
-                  <span className="ml-3">{item.name}</span>
-                  {item.badge && (
-                    <span className="ml-auto bg-primary text-white text-xs rounded-full px-2 py-1">
-                      {item.badge}
-                    </span>
-                  )}
                 </Link>
               );
             })}
@@ -424,9 +418,7 @@ export default function DashboardLayout({
         </nav>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 lg:ml-0">
-        {/* Top Bar */}
         <header className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
@@ -454,7 +446,6 @@ export default function DashboardLayout({
                 )}
               </Button>
 
-              {/* Messages */}
               <Button variant="ghost" size="icon" className="relative">
                 <MessageSquare className="w-5 h-5" />
                 {messages > 0 && (
@@ -464,7 +455,6 @@ export default function DashboardLayout({
                 )}
               </Button>
 
-              {/* Profile Dropdown */}
               <div className="relative">
                 <Button
                   variant="ghost"
@@ -505,11 +495,9 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="p-6">{children}</main>
       </div>
 
-      {/* Sidebar Overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
