@@ -1,0 +1,269 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Dispute {
+  id          String          @id @default(uuid()) @db.Uuid
+  title       String
+  details     String?
+  property_id String          @db.Uuid
+  openedBy    String?         @db.Uuid     // who raised it (tenant or landlord)
+  priority    DisputePriority @default(MEDIUM)
+  status      DisputeStatus   @default(OPEN)
+  openedAt    DateTime        @default(now()) @db.Timestamp(6)
+}
+
+model Users {
+  id                                                  String               @id @default(uuid()) @db.Uuid
+  firstName                                           String               @db.VarChar(32)
+  lastName                                            String               @db.VarChar(32)
+  email                                               String               @unique @db.VarChar(255)
+  phoneNo                                             String               @unique @db.VarChar(15)
+  password                                            String
+  role                                                UserRole
+  createdAt                                           DateTime?             @default(now()) @db.Timestamp(6)
+  updatedAt                                           DateTime?             @default(now()) @updatedAt @db.Timestamp(6)
+  Documents                                           Documents[]
+  Leases_Leases_landlord_idToUsers                    Leases[]              @relation("Leases_landlord_idToUsers")
+  Leases_Leases_tenant_idToUsers                      Leases[]              @relation("Leases_tenant_idToUsers")
+  MaintenanceRequests                                 MaintenanceRequests[]
+  Messages_Messages_receiver_idToUsers                Messages[]            @relation("Messages_receiver_idToUsers")
+  Messages_Messages_sender_idToUsers                  Messages[]            @relation("Messages_sender_idToUsers")
+  Notifications                                       Notifications[]
+  Payments_Payments_landlord_idToUsers                Payments[]            @relation("Payments_landlord_idToUsers")
+  Payments_Payments_tenant_idToUsers                  Payments[]            @relation("Payments_tenant_idToUsers")
+  Properties_Properties_createdByToUsers              Properties[]          @relation("Properties_createdByToUsers")
+  Properties_Properties_landlord_idToUsers            Properties[]          @relation("Properties_landlord_idToUsers")
+  PropertyManagers_PropertyManagers_assignedByToUsers PropertyManagers[]    @relation("PropertyManagers_assignedByToUsers")
+  PropertyManagers_PropertyManagers_manager_idToUsers PropertyManagers[]    @relation("PropertyManagers_manager_idToUsers")
+  PropertyReviews                                     PropertyReviews[]
+  SavedProperties                                     SavedProperties[]
+  ScheduledVisits                                     ScheduledVisits[]
+  TenantVerifications                                 TenantVerifications[]
+  UserActivityLogs                                    UserActivityLogs[]
+}
+
+model Properties {
+  id                                  String                 @id @default(uuid()) @db.Uuid
+  landlord_id                         String?                @db.Uuid
+  createdBy                           String?                @db.Uuid
+  propertyType                        PropertyType?
+  area                                Decimal?               @db.Decimal(10, 2)
+  isAvailable                         Boolean?               @default(true)
+  availableFrom                       DateTime?              @db.Date
+  status                              PropertyStatus?        @default(PENDING_VERIFICATION)
+  createdAt                           DateTime?              @default(now()) @db.Timestamp(6)
+  updatedAt                           DateTime?              @default(now()) @updatedAt @db.Timestamp(6)
+  Leases                              Leases[]
+  MaintenanceRequests                 MaintenanceRequests[]
+  Payments                            Payments[]
+  Users_Properties_createdByToUsers   Users?                 @relation("Properties_createdByToUsers", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Users_Properties_landlord_idToUsers Users?                 @relation("Properties_landlord_idToUsers", fields: [landlord_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  PropertyCertificates                PropertyCertificates[]
+  PropertyImages                      PropertyImages[]
+  PropertyManagers                    PropertyManagers[]
+  PropertyReviews                     PropertyReviews[]
+  SavedProperties                     SavedProperties[]
+  ScheduledVisits                     ScheduledVisits[]
+}
+
+model PropertyCertificates {
+  id              String      @id @default(uuid()) @db.Uuid
+  property_id     String?     @db.Uuid
+  certificateName String?     @db.VarChar(100)
+  documentURL     String?
+  uploadedAt      DateTime?   @default(now()) @db.Timestamp(6)
+  Properties      Properties? @relation(fields: [property_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model TenantVerifications {
+  id               String    @id @default(uuid()) @db.Uuid
+  tenant_id        String?   @db.Uuid
+  verificationDate DateTime? @default(now()) @db.Timestamp(6)
+  Users            Users?    @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Leases {
+  id                              String      @id @default(uuid()) @db.Uuid
+  tenant_id                       String?     @db.Uuid
+  property_id                     String?     @db.Uuid
+  landlord_id                     String?     @db.Uuid
+  startDate                       DateTime?   @db.Date
+  endDate                         DateTime?   @db.Date
+  monthlyRent                     Decimal?    @db.Decimal(10, 2)
+  depositAmount                   Decimal?    @db.Decimal(10, 2)
+  signedAgreementURL              String?
+  status                          String?     @default("ACTIVE") @db.VarChar(20)
+  Users_Leases_landlord_idToUsers Users?      @relation("Leases_landlord_idToUsers", fields: [landlord_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Properties                      Properties? @relation(fields: [property_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Users_Leases_tenant_idToUsers   Users?      @relation("Leases_tenant_idToUsers", fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Payments {
+  id                                String         @id @default(uuid()) @db.Uuid
+  tenant_id                         String?        @db.Uuid
+  landlord_id                       String?        @db.Uuid
+  property_id                       String?        @db.Uuid
+  amount                            Decimal?       @db.Decimal(10, 2)
+  paymentDate                       DateTime?      @default(now()) @db.Timestamp(6)
+  paymentStatus                     String?        @default("PAID") @db.VarChar(20)
+  paymentMethod                     String?        @db.VarChar(50)
+  Users_Payments_landlord_idToUsers Users?         @relation("Payments_landlord_idToUsers", fields: [landlord_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Properties                        Properties?    @relation(fields: [property_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Users_Payments_tenant_idToUsers   Users?         @relation("Payments_tenant_idToUsers", fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Transactions                      Transactions[]
+}
+
+model PropertyManagers {
+  id                                       String      @id @default(uuid()) @db.Uuid
+  manager_id                               String?     @db.Uuid
+  property_id                              String?     @db.Uuid
+  assignedBy                               String?     @db.Uuid
+  assignedDate                             DateTime?   @default(now()) @db.Timestamp(6)
+  Users_PropertyManagers_assignedByToUsers Users?      @relation("PropertyManagers_assignedByToUsers", fields: [assignedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Users_PropertyManagers_manager_idToUsers Users?      @relation("PropertyManagers_manager_idToUsers", fields: [manager_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Properties                               Properties? @relation(fields: [property_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model PropertyReviews {
+  id          String      @id @default(uuid()) @db.Uuid
+  property_id String?     @db.Uuid
+  tenant_id   String?     @db.Uuid
+  rating      Int?
+  review      String?
+  reviewDate  DateTime?   @default(now()) @db.Timestamp(6)
+  Properties  Properties? @relation(fields: [property_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Users       Users?      @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Notifications {
+  id        String    @id @default(uuid()) @db.Uuid
+  user_id   String?   @db.Uuid
+  message   String?
+  isRead    Boolean?  @default(false)
+  createdAt DateTime? @default(now()) @db.Timestamp(6)
+  Users     Users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model MaintenanceRequests {
+  id             String             @id @default(uuid()) @db.Uuid
+  property_id    String?            @db.Uuid
+  tenant_id      String?            @db.Uuid
+  requestDetails String?
+  status         MaintenanceStatus? @default(PENDING)
+  createdAt      DateTime?          @default(now()) @db.Timestamp(6)
+  updatedAt      DateTime?          @default(now()) @updatedAt @db.Timestamp(6)
+  Properties     Properties?        @relation(fields: [property_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Users          Users?             @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model ScheduledVisits {
+  id            String      @id @default(uuid()) @db.Uuid
+  property_id   String?     @db.Uuid
+  visitor_id    String?     @db.Uuid
+  scheduledDate DateTime?   @db.Timestamp(6)
+  status        String?     @default("PENDING") @db.VarChar(20)
+  Properties    Properties? @relation(fields: [property_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Users         Users?      @relation(fields: [visitor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model SavedProperties {
+  id          String      @id @default(uuid()) @db.Uuid
+  user_id     String?     @db.Uuid
+  property_id String?     @db.Uuid
+  savedAt     DateTime?   @default(now()) @db.Timestamp(6)
+  Properties  Properties? @relation(fields: [property_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Users       Users?      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Documents {
+  id           String    @id @default(uuid()) @db.Uuid
+  user_id      String?   @db.Uuid
+  documentType String?   @db.VarChar(50)
+  documentURL  String?
+  uploadedAt   DateTime? @default(now()) @db.Timestamp(6)
+  Users        Users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Transactions {
+  id              String    @id @default(uuid()) @db.Uuid
+  payment_id      String?   @db.Uuid
+  transactionType String?   @default("RENT") @db.VarChar(50)
+  amount          Decimal?  @db.Decimal(10, 2)
+  transactionDate DateTime? @default(now()) @db.Timestamp(6)
+  Payments        Payments? @relation(fields: [payment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Messages {
+  id                                String    @id @default(uuid()) @db.Uuid
+  sender_id                         String?   @db.Uuid
+  receiver_id                       String?   @db.Uuid
+  message                           String?
+  sentAt                            DateTime? @default(now()) @db.Timestamp(6)
+  isRead                            Boolean?  @default(false)
+  Users_Messages_receiver_idToUsers Users?    @relation("Messages_receiver_idToUsers", fields: [receiver_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Users_Messages_sender_idToUsers   Users?    @relation("Messages_sender_idToUsers", fields: [sender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model UserActivityLogs {
+  id        String    @id @default(uuid()) @db.Uuid
+  user_id   String?   @db.Uuid
+  action    String?   @db.VarChar(100)
+  timestamp DateTime? @default(now()) @db.Timestamp(6)
+  Users     Users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model PropertyImages {
+  id          String      @id @default(uuid()) @db.Uuid
+  property_id String?     @db.Uuid
+  imageURL    String?
+  uploadedAt  DateTime?   @default(now()) @db.Timestamp(6)
+  Properties  Properties? @relation(fields: [property_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+enum PropertyType {
+  Bungalow
+  Apartment
+  House
+  Studio
+  Cottage
+  Villa
+  Other
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  LANDLORD
+  TENANT
+}
+
+enum PropertyStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  INACTIVE
+  RENTED
+}
+
+enum MaintenanceStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum DisputePriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum DisputeStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}

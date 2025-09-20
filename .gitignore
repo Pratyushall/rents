@@ -1,0 +1,39 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Logs
+logs/
+*.log
+*.csv
+*.dat
+*.out
+*.pid
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Optional environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Next.js build output
+.next/
+out/
+
+# Tailwind generated files (if using JIT with output)
+tailwind-output.css
+
+# VS Code settings
+.vscode/
+
+# Build
+dist/
+build/
