@@ -1,9 +1,11 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+
+// Use RELATIVE imports (no @ alias required)
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -28,25 +30,17 @@ export default function LoginClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // default from ?role=, else tenant
+  // default from ?role=, else "tenant"
   const roleFromQuery =
     (searchParams.get("role")?.toLowerCase() as Role) || "tenant";
-  const [role, setRole] = useState<Role>("tenant");
 
-  useEffect(() => {
-    setRole(roleFromQuery);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
+  const [role, setRole] = useState<Role>(roleFromQuery);
   const [formData, setFormData] = useState({ email: "", password: "" });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const mockUser = {
-      email: formData.email,
-      role, // <- use the selectable role
-    };
+    const mockUser = { email: formData.email, role };
 
     // Store user data (replace with real auth in production)
     if (typeof window !== "undefined") {
@@ -54,21 +48,15 @@ export default function LoginClient() {
     }
 
     // Redirect to role-specific homepage
-    switch (role) {
-      case "admin":
-        router.push("/admin/home");
-        break;
-      case "manager":
-        router.push("/manager/home");
-        break;
-      case "landlord":
-        router.push("/landlord/home");
-        break;
-      case "tenant":
-      default:
-        router.push("/tenant/home");
-        break;
-    }
+    router.push(
+      role === "admin"
+        ? "/admin/home"
+        : role === "manager"
+        ? "/manager/home"
+        : role === "landlord"
+        ? "/landlord/home"
+        : "/tenant/home"
+    );
   };
 
   return (
@@ -97,7 +85,7 @@ export default function LoginClient() {
                 <Label htmlFor="role" className="font-semibold">
                   Role
                 </Label>
-                <Select value={role} onValueChange={(v: Role) => setRole(v)}>
+                <Select value={role} onValueChange={(v) => setRole(v as Role)}>
                   <SelectTrigger id="role" className="w-full">
                     <SelectValue placeholder="Choose role" />
                   </SelectTrigger>
@@ -118,7 +106,7 @@ export default function LoginClient() {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) =>
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
                   required
@@ -133,7 +121,7 @@ export default function LoginClient() {
                   id="password"
                   type="password"
                   value={formData.password}
-                  onChange={(e) =>
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setFormData({ ...formData, password: e.target.value })
                   }
                   required
@@ -145,7 +133,7 @@ export default function LoginClient() {
                   <input
                     id="remember"
                     type="checkbox"
-                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                    className="h-4 w-4 border-gray-300 rounded"
                   />
                   <label
                     htmlFor="remember"
