@@ -24,7 +24,7 @@ import {
 
 type Role = "tenant" | "landlord" | "manager" | "admin";
 
-export default function LoginPage() {
+export default function LoginClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -49,7 +49,9 @@ export default function LoginPage() {
     };
 
     // Store user data (replace with real auth in production)
-    localStorage.setItem("user", JSON.stringify(mockUser));
+    if (typeof window !== "undefined") {
+      localStorage.setItem("user", JSON.stringify(mockUser));
+    }
 
     // Redirect to role-specific homepage
     switch (role) {
