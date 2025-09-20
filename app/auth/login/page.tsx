@@ -22,18 +22,13 @@ import {
   SelectItem,
 } from "../../components/ui/select";
 import { Suspense } from "react";
-import LoginClient from "@/app/auth/login-temp/login-client";
 
 type Role = "tenant" | "landlord" | "manager" | "admin";
 
 export const dynamic = "force-dynamic";
 
 export default function LoginPage() {
-  return (
-    <Suspense fallback={<div className="p-6">Loading…</div>}>
-      <LoginClient />
-    </Suspense>
-  );
+  return <Suspense fallback={<div className="p-6">Loading…</div>}></Suspense>;
 }
 
 const router = useRouter();
