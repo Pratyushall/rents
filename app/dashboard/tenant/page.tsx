@@ -13,7 +13,7 @@ export default function TenantHomePage() {
             <span className="text-black">Rent</span>
             <span className="text-pink-600">Ease</span>
           </div>
-          <div className="flex gap-6 items-center text-sm font-medium text-gray-700">
+          <nav className="flex gap-6 items-center text-sm font-medium text-gray-700">
             <Link href="/rent" className="hover:text-pink-600 transition">
               Rent
             </Link>
@@ -29,7 +29,7 @@ export default function TenantHomePage() {
             >
               Dashboard
             </Link>
-          </div>
+          </nav>
         </div>
       </header>
 

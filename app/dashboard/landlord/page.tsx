@@ -1,7 +1,6 @@
-// app/dashboard/landlord/page.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Card,
   CardContent,
@@ -17,7 +16,7 @@ interface LandlordStats {
   occupiedCount: number;
   vacantCount: number;
   monthlyRevenue: number;
-  revenueChange: string | null;
+  revenueChange: number | null; // make numeric for consistent formatting
   pendingCertificates: number;
   activeTenants: number;
   newTenants: number;
@@ -27,33 +26,60 @@ export default function LandlordDashboard() {
   const [showAddProperty, setShowAddProperty] = useState(false);
   const [stats, setStats] = useState<LandlordStats | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const apiBase = useMemo(
+    () => process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api",
+    []
+  );
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const controller = new AbortController();
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
     if (!token) {
       setError("Not logged in");
+      setLoading(false);
       return;
     }
-    const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
-    fetch(`${apiUrl}/dashboard/landlord`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(async (res) => {
+
+    (async () => {
+      try {
+        const res = await fetch(`${apiBase}/dashboard/landlord`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+          cache: "no-store",
+        });
+        const body = await res.json().catch(() => ({}));
         if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.message || "Failed to load dashboard");
+          throw new Error(body?.message || "Failed to load dashboard");
         }
-        return res.json();
-      })
-      .then((data: LandlordStats) => setStats(data))
-      .catch((err: Error) => setError(err.message));
-  }, []);
+        setStats(body as LandlordStats);
+      } catch (e: any) {
+        if (e?.name !== "AbortError") setError(e?.message || "Failed to load");
+      } finally {
+        setLoading(false);
+      }
+    })();
+
+    return () => controller.abort();
+  }, [apiBase]);
+
+  const formatMoney = (n?: number) =>
+    typeof n === "number"
+      ? n.toLocaleString(undefined, {
+          style: "currency",
+          currency: "USD",
+          maximumFractionDigits: 0,
+        })
+      : "...";
 
   return (
     <DashboardLayout role="landlord">
       <div className="space-y-6">
         {error && <div className="text-red-600 font-bold">{error}</div>}
+
         {/* Quick Stats */}
         <div className="grid md:grid-cols-4 gap-6">
           <Card>
@@ -64,12 +90,14 @@ export default function LandlordDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {stats ? stats.totalProperties : "..."}
+                {loading ? "..." : stats?.totalProperties ?? 0}
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                {stats
-                  ? `${stats.occupiedCount} occupied, ${stats.vacantCount} vacant`
-                  : "..."}
+                {loading
+                  ? "..."
+                  : `${stats?.occupiedCount ?? 0} occupied, ${
+                      stats?.vacantCount ?? 0
+                    } vacant`}
               </p>
             </CardContent>
           </Card>
@@ -82,12 +110,17 @@ export default function LandlordDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                {stats ? `$${stats.monthlyRevenue}` : "..."}
+                {loading ? "..." : formatMoney(stats?.monthlyRevenue)}
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                {stats && stats.revenueChange !== null
-                  ? `+${stats.revenueChange}% from last month`
-                  : "..."}
+                {loading
+                  ? "..."
+                  : stats?.revenueChange !== null &&
+                    stats?.revenueChange !== undefined
+                  ? `${stats.revenueChange >= 0 ? "+" : ""}${
+                      stats.revenueChange
+                    }% from last month`
+                  : "—"}
               </p>
             </CardContent>
           </Card>
@@ -100,7 +133,7 @@ export default function LandlordDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600">
-                {stats ? stats.pendingCertificates : "..."}
+                {loading ? "..." : stats?.pendingCertificates ?? 0}
               </div>
               <p className="text-xs text-gray-500 mt-1">Awaiting review</p>
             </CardContent>
@@ -114,10 +147,10 @@ export default function LandlordDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {stats ? stats.activeTenants : "..."}
+                {loading ? "..." : stats?.activeTenants ?? 0}
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                {stats ? `${stats.newTenants} new this month` : "..."}
+                {loading ? "..." : `${stats?.newTenants ?? 0} new this month`}
               </p>
             </CardContent>
           </Card>
@@ -129,7 +162,6 @@ export default function LandlordDashboard() {
             onClick={() => setShowAddProperty(true)}
             className="bg-primary hover:bg-primary/90 font-bold"
           >
-            {/* SVG omitted for brevity */}
             Add Property
           </Button>
           <Button variant="outline" className="font-bold">
@@ -140,8 +172,7 @@ export default function LandlordDashboard() {
           </Button>
         </div>
 
-        {/* Main Content (static for now) */}
-        {/* … the rest of your UI remains unchanged … */}
+        {/* TODO: main content (table/cards) once API is ready */}
       </div>
     </DashboardLayout>
   );

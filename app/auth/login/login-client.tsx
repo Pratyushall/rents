@@ -1,11 +1,10 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
-// Use RELATIVE imports (no @ alias required)
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -24,45 +23,95 @@ import {
   SelectItem,
 } from "../../components/ui/select";
 
-type Role = "tenant" | "landlord" | "manager" | "admin";
+import { login as apiLogin } from "../../lib/api";
+import { useAuthStore } from "../../lib/store";
+import type { UserRole } from "../../lib/types";
+
+type UiRole = "tenant" | "landlord" | "manager" | "admin";
+
+// Accepts enum-like ("TENANT") or lowercase ("tenant")
+function normalizeRole(role: string | undefined | null): UiRole {
+  const r = (role || "").toString().toLowerCase();
+  if (r === "tenant") return "tenant";
+  if (r === "landlord") return "landlord";
+  if (r === "manager") return "manager";
+  if (r === "admin") return "admin";
+  // default
+  return "tenant";
+}
+
+function routeForRole(role: string): string {
+  switch (normalizeRole(role)) {
+    case "admin":
+      return "/dashboard/admin";
+    case "landlord":
+      return "/dashboard/landlord";
+    case "manager":
+      return "/dashboard/manager";
+    case "tenant":
+    default:
+      return "/dashboard/tenant";
+  }
+}
 
 export default function LoginClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { login: setAuth } = useAuthStore();
 
-  // default from ?role=, else "tenant"
-  const roleFromQuery =
-    (searchParams.get("role")?.toLowerCase() as Role) || "tenant";
+  const initialRole = useMemo(
+    () => normalizeRole(searchParams.get("role")),
+    [searchParams]
+  );
+  const nextParam = useMemo(
+    () => searchParams.get("next") || "",
+    [searchParams]
+  );
 
-  const [role, setRole] = useState<Role>(roleFromQuery);
+  const [role, setRole] = useState<UiRole>(initialRole);
   const [formData, setFormData] = useState({ email: "", password: "" });
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError(null);
+    setLoading(true);
 
-    const mockUser = { email: formData.email, role };
+    try {
+      const { token, user } = await apiLogin(formData.email, formData.password);
 
-    // Store user data (replace with real auth in production)
-    if (typeof window !== "undefined") {
-      localStorage.setItem("user", JSON.stringify(mockUser));
+      // Persist auth (Zustand)
+      setAuth(token, user);
+
+      // Optional: also mirror token locally if your fetchers rely on it
+      try {
+        localStorage.setItem("token", token);
+      } catch {}
+
+      // Prefer an explicit ?next=... target if provided and safe
+      const safeNext =
+        nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
+          ? nextParam
+          : null;
+
+      const fallback = routeForRole((user as any)?.role);
+
+      router.replace(safeNext || fallback);
+    } catch (err: any) {
+      // Show API-provided message if available
+      const msg =
+        (err?.message && typeof err.message === "string" && err.message) ||
+        "Invalid email or password";
+      setError(msg);
+    } finally {
+      setLoading(false);
     }
-
-    // Redirect to role-specific homepage
-    router.push(
-      role === "admin"
-        ? "/admin/home"
-        : role === "manager"
-        ? "/manager/home"
-        : role === "landlord"
-        ? "/landlord/home"
-        : "/tenant/home"
-    );
   };
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="text-4xl font-extrabold">
             <span className="text-primary">Rent</span>
@@ -80,12 +129,15 @@ export default function LoginClient() {
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Role selector */}
+              {/* Role selector is UI-only; backend decides final role */}
               <div>
                 <Label htmlFor="role" className="font-semibold">
                   Role
                 </Label>
-                <Select value={role} onValueChange={(v) => setRole(v as Role)}>
+                <Select
+                  value={role}
+                  onValueChange={(v) => setRole(v as UiRole)}
+                >
                   <SelectTrigger id="role" className="w-full">
                     <SelectValue placeholder="Choose role" />
                   </SelectTrigger>
@@ -106,9 +158,10 @@ export default function LoginClient() {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setFormData({ ...formData, email: e.target.value })
+                  onChange={(e) =>
+                    setFormData((s) => ({ ...s, email: e.target.value }))
                   }
+                  autoComplete="email"
                   required
                 />
               </div>
@@ -121,40 +174,22 @@ export default function LoginClient() {
                   id="password"
                   type="password"
                   value={formData.password}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setFormData({ ...formData, password: e.target.value })
+                  onChange={(e) =>
+                    setFormData((s) => ({ ...s, password: e.target.value }))
                   }
+                  autoComplete="current-password"
                   required
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="remember"
-                    type="checkbox"
-                    className="h-4 w-4 border-gray-300 rounded"
-                  />
-                  <label
-                    htmlFor="remember"
-                    className="ml-2 block text-sm text-gray-600"
-                  >
-                    Remember me
-                  </label>
-                </div>
-                <Link
-                  href="/auth/forgot-password"
-                  className="text-sm text-primary hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
+              {error && (
+                <p className="text-sm text-red-600" role="alert">
+                  {error}
+                </p>
+              )}
 
-              <Button
-                type="submit"
-                className="w-full bg-primary hover:bg-primary/90 font-bold"
-              >
-                Sign In
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
 
@@ -162,7 +197,7 @@ export default function LoginClient() {
               <p className="text-sm text-gray-600">
                 Don’t have an account?{" "}
                 <Link
-                  href={`/auth/signup?role=${role}`}
+                  href="/auth/signup"
                   className="text-primary font-semibold hover:underline"
                 >
                   Sign up

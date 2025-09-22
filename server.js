@@ -1,4 +1,4 @@
-// server.js
+// server.js (root)
 import express from "express";
 import next from "next";
 import path from "path";
@@ -16,22 +16,24 @@ const handle = app.getRequestHandler();
 app.prepare().then(() => {
   const server = express();
 
-  // ✅ DO NOT import `static`, just use express.static directly
-  server.use(express.static(path.join(__dirname, "public")));
-
-  server.all("*", (req, res) => {
-    return handle(req, res);
-  });
-
-  app.use(
+  // ✅ Middlewares belong on `server` (not on `app`)
+  server.use(
     cors({
-      origin: "http://localhost:3000",
+      origin: (process.env.FRONTEND_CORS_ORIGINS || "http://localhost:3000")
+        .split(",")
+        .map((s) => s.trim()),
       credentials: true,
     })
   );
-  app.use(express.json());
+  server.use(express.json({ limit: "5mb" }));
+
+  // Static assets from /public
+  server.use(express.static(path.join(__dirname, "public")));
+
+  // Next.js handler
+  server.all("*", (req, res) => handle(req, res));
 
   server.listen(port, () => {
-    console.log(`🚀 Frontend ready on http://localhost:${port}`);
+    console.log(` Frontend ready on http://localhost:${port}`);
   });
 });

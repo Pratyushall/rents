@@ -38,7 +38,6 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero Section */}
       <section className="relative h-[90vh] w-full overflow-hidden pt-24">
         <img
           src="/images/hero1.jpg"
@@ -64,9 +63,6 @@ export default function LandingPage() {
 
       <div className="h-20 sm:h-28" />
 
-      {/* --- REPLACED ROLE CARDS WITH TWO NEW SECTIONS --- */}
-
-      {/* For Landlords: text left, image right */}
       <section className="py-16 px-6">
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-10 items-center">
           <div>
@@ -107,7 +103,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* For Tenants: image left, text right */}
       <section className="py-16 px-6 bg-pink-50 border-y border-gray-100">
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-10 items-center">
           <div className="relative order-1 md:order-none">
@@ -149,7 +144,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Key Features Section */}
       <section className="py-20 px-6 bg-pink-50 border-t border-b border-gray-100">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-gray-800 mb-12">
@@ -202,7 +196,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How it Works Section */}
       <section className="py-20 px-6 bg-white border-b border-gray-100">
         <div className="max-w-5xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-gray-800 mb-12">
@@ -240,7 +233,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="border-t border-gray-100 py-10 bg-white">
         <div className="max-w-7xl mx-auto px-6 text-center space-y-4">
           <div className="text-2xl font-extrabold">
