@@ -18,13 +18,12 @@ export async function POST(req) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ⚠️ phoneNo is required in your schema, so placeholder for now
     const user = await prisma.users.create({
       data: {
         firstName,
         lastName,
         email,
-        phoneNo: "0000000000", // TODO: collect from signup form later
+        phoneNo: "0000000000",
         password: hashedPassword,
         role,
       },

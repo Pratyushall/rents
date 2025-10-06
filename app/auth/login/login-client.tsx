@@ -29,14 +29,12 @@ import type { UserRole } from "../../lib/types";
 
 type UiRole = "tenant" | "landlord" | "manager" | "admin";
 
-// Accepts enum-like ("TENANT") or lowercase ("tenant")
 function normalizeRole(role: string | undefined | null): UiRole {
   const r = (role || "").toString().toLowerCase();
   if (r === "tenant") return "tenant";
   if (r === "landlord") return "landlord";
   if (r === "manager") return "manager";
   if (r === "admin") return "admin";
-  // default
   return "tenant";
 }
 
@@ -81,27 +79,22 @@ export default function LoginClient() {
     try {
       const { token, user } = await apiLogin(formData.email, formData.password);
 
-      // Persist auth (Zustand)
       setAuth(token, user);
 
-      // Optional: also mirror token locally if your fetchers rely on it
       try {
         localStorage.setItem("token", token);
       } catch {}
 
-      // Prefer an explicit ?next=... target if provided and safe
       const safeNext =
         nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
           ? nextParam
           : null;
 
-      const fallback = routeForRole((user as any)?.role);
-
+      const fallback = routeForRole((user as any)?.role as string);
       router.replace(safeNext || fallback);
     } catch (err: any) {
-      // Show API-provided message if available
       const msg =
-        (err?.message && typeof err.message === "string" && err.message) ||
+        (typeof err?.message === "string" && err.message) ||
         "Invalid email or password";
       setError(msg);
     } finally {

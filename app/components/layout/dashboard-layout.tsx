@@ -375,7 +375,6 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
       <div
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -436,7 +435,6 @@ export default function DashboardLayout({
             </div>
 
             <div className="flex items-center space-x-4">
-              {/* Notifications */}
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="w-5 h-5" />
                 {notifications > 0 && (

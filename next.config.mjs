@@ -1,4 +1,8 @@
+// next.config.mjs
+
 /** @type {import('next').NextConfig} */
+const API_ORIGIN = process.env.API_ORIGIN ?? "http://localhost:3001";
+
 const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
@@ -11,6 +15,15 @@ const nextConfig = {
   },
   experimental: {
     optimizePackageImports: ["lucide-react"],
+  },
+
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${API_ORIGIN}/api/:path*`,
+      },
+    ];
   },
 };
 
